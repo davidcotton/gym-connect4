@@ -29,7 +29,6 @@ class Connect4Env(gym.Env):
         self.game_over = False
         self.player = 1
         self.winner = None
-
         return self._get_state()
 
     def step(self, action):
