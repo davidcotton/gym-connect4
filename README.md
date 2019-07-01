@@ -1,4 +1,4 @@
-# 2 Player Connect4 Gym Environment
+# 2 player Connect4 OpenAI Gym environment
 OpenAI Gym environment for the classic board game - Connect4. 
 Designed for adversarial reinforcement learning, requires two agents to play. 
 
@@ -14,7 +14,7 @@ Use pip to install the git repo
 Import Gym and the Connect4 environment
 
     import gym
-    import gym-connnect4
+    import gym_connnect4
 
 Make the Connect4 environment
 

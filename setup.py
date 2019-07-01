@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name='gym-connect4',
+    name='gym_connect4',
     version='0.1.0',
-    description='Gym Connect 4',
+    description='2 player Connect4 OpenAI Gym environment',
     long_description=open('README.md').read(),
     install_requires=['gym'],
 )
