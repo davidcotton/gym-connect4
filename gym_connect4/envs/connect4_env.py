@@ -120,8 +120,15 @@ class Connect4Env(gym.Env):
         return self.board.copy()
 
     def render(self, mode='human') -> None:
-        print(self._get_state(), '\n')
-        if self.winner:
-            print('winner:', self.winner)
+        print('  1 2 3 4 5 6 7')
+        print(' ---------------')
+        print(self._get_state())
+        print(' ---------------')
+        print('  1 2 3 4 5 6 7')
+        print()
+        if self.winner is not None:
+            print('##########')
+            print('Winner:', self.winner)
+            print('##########')
 
 
