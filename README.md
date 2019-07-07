@@ -40,7 +40,7 @@ I've added some additional helper methods and properties to the environment:
 ### Valid Moves
 Get a set of valid moves available,
 
-    env.valid_moves()
+    env.valid_actions()
     >>> Set(0, 4, 6)
 
 ### Winner
