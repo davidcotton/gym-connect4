@@ -1,4 +1,4 @@
-from typing import Set
+from typing import Set, Tuple
 
 import gym
 from gym import spaces
@@ -7,6 +7,8 @@ import numpy as np
 
 BOARD_WIDTH = 7
 BOARD_HEIGHT = 6
+REWARD_WIN = 1.0
+REWARD_LOSS = -1.0
 
 
 class Connect4Env(gym.Env):
@@ -31,14 +33,23 @@ class Connect4Env(gym.Env):
         self.winner = None
         return self._get_state()
 
-    def step(self, action):
-        if not self.game_over:
-            i = self._drop(self.player, action)
-            reward = -1.0 if i < 0 else 0.0  # negative reward if invalid action (column full)
-            self._winning_check(i, action)
+    def step(self, action) -> Tuple[np.ndarray, float, bool, dict]:
+        """Make a game action.
 
+        Throws a ValueError if trying to drop into a full column.
+
+        :param action: The column index to drop in.
+        :return: A tuple containing the next state, reward, if the game ended and an empty info dict.
+        """
+        if not self.game_over:
+            remaining_rows = self._drop(self.player, action)
+            if remaining_rows < 0:
+                raise ValueError('Invalid action, column full.')
+            self._winning_check(remaining_rows, action)
+
+        reward = 0.0
         if self.game_over:
-            reward = 1.0 if self.player == self.winner else -1.0
+            reward = REWARD_WIN if self.player == self.winner else REWARD_LOSS
 
         if np.all(self.board):  # check if board full
             self.game_over = True
@@ -51,9 +62,12 @@ class Connect4Env(gym.Env):
 
         return self._get_state(), reward, self.game_over, info
 
-    def _drop(self, player, column):
-        """
-        Drops a number (same as player) in the column specified
+    def _drop(self, player, column) -> int:
+        """Drop a coin into the specified column.
+
+        :param player: The player making the action.
+        :param column: The column the coin is being placed.
+        :return: The number of remaining rows above the placed coin.
         """
         column_vec = self.board[:, column]
         non_zero = np.where(column_vec != 0)[0]
@@ -69,7 +83,11 @@ class Connect4Env(gym.Env):
                 self.board[i, column] = player
         return i
 
-    def valid_moves(self) -> Set[int]:
+    def valid_actions(self) -> Set[int]:
+        """Fetch a set of valid moves available.
+
+        :return: A set of valid moves.
+        """
         valid_moves = set()
         for column in range(self.board.shape[1]):
             column_vec = self.board[:, column]
@@ -78,14 +96,15 @@ class Connect4Env(gym.Env):
                 valid_moves.add(column)
         return valid_moves
 
-    def _winning_check(self, i, j) -> None:
-        """
-        Checks if there is four equal numbers in every
-        row, column and diagonal of the matrix
+    def _winning_check(self, i, action) -> None:
+        """Checks if there is four equal numbers in every row, column and diagonal of the matrix.
+
+        :param i:
+        :param action: The column the player dropped into.
         """
         all_arr = []
-        all_arr.extend(self._get_axes(self.board, i, j))
-        all_arr.extend(self._get_diagonals(self.board, i, j))
+        all_arr.extend(self._get_axes(self.board, i, action))
+        all_arr.extend(self._get_diagonals(self.board, i, action))
 
         for arr in all_arr:
             winner = self._winning_rule(arr)
@@ -130,5 +149,3 @@ class Connect4Env(gym.Env):
             print('##########')
             print('Winner:', self.winner)
             print('##########')
-
-
