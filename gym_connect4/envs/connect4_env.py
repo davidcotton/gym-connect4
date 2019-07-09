@@ -1,3 +1,4 @@
+import copy
 from typing import Set, Tuple
 
 import gym
@@ -5,8 +6,8 @@ from gym import spaces
 import numpy as np
 
 
-BOARD_WIDTH = 7
 BOARD_HEIGHT = 6
+BOARD_WIDTH = 7
 REWARD_WIN = 1.0
 REWARD_LOSS = -1.0
 
@@ -14,23 +15,37 @@ REWARD_LOSS = -1.0
 class Connect4Env(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self) -> None:
+    def __init__(self, initial_state=None, initial_player=None) -> None:
         super().__init__()
         self.action_space = spaces.Discrete(BOARD_WIDTH)
         self.observation_space = spaces.Box(low=0, high=2, shape=(BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
-        self.obs_type = 'image'
         self.board = np.zeros([BOARD_HEIGHT, BOARD_WIDTH], dtype=np.uint8)
-        self.time = 0
-        self.game_over = False
         self.player = 1
+        self.game_over = False
         self.winner = None
+        self.reset(initial_state, initial_player)
 
-    def reset(self) -> np.ndarray:
-        self.board = np.zeros([BOARD_HEIGHT, BOARD_WIDTH], dtype=np.uint8)
-        self.time = 0
-        self.game_over = False
-        self.player = 1
-        self.winner = None
+    def reset(self, state=None, player=None) -> np.ndarray:
+        if state is not None and player is not None:
+            self.board = state.copy().reshape((BOARD_HEIGHT, BOARD_WIDTH))
+            self.player = player
+            self.time = np.count_nonzero(state)
+
+            # all_arr = []
+            # for column in range(self.board.shape[1]):
+            #     column_vec = self.board[:, column]
+            #     non_zero = np.where(column_vec != 0)[0]
+            #     i = non_zero[0] - 1 if len(non_zero) else self.board.shape[0] - 1
+            #
+            #     all_arr.extend(self._get_axes(self.board, i, column))
+            #     all_arr.extend(self._get_diagonals(self.board, i, column))
+            #
+            # for arr in all_arr:
+            #     winner = self._winning_rule(arr)
+            #     if winner:
+            #         self.game_over = True
+            #         self.winner = self.player
+
         return self._get_state()
 
     def step(self, action) -> Tuple[np.ndarray, float, bool, dict]:
