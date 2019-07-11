@@ -70,7 +70,13 @@ class Connect4Env(gym.Env):
         #     print('##########')
 
     def winner(self) -> int:
-        if not self.game.is_game_over():
+        """Fetch the winner of a completed game.
+
+        :return: 0 or 1 if that player is winner, -1 for draw.
+        """
+        assert self.game.is_game_over()
+
+        if self.game.is_draw():
             return -1
         return 0 if self.game.is_winner(0) else 1
 
