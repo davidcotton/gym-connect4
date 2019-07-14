@@ -10,8 +10,8 @@ BOARD_HEIGHT = 6
 BOARD_WIDTH = 7
 WIN_LENGTH = 4
 REWARD_WIN = 1.0
-REWARD_LOSS = -1.0
-REWARD_DRAW = 0
+REWARD_LOSS = 0.0
+REWARD_DRAW = 0.5
 
 
 class Connect4Env(gym.Env):
@@ -82,6 +82,12 @@ class Connect4Env(gym.Env):
 
     def time(self):
         return np.count_nonzero(self.game.board)
+
+    def reward_lose(self):
+        return REWARD_LOSS
+
+    def reward_draw(self):
+        return REWARD_DRAW
 
 
 class Connect4:
