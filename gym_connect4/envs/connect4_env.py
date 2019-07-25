@@ -22,9 +22,13 @@ class Connect4Env(gym.Env):
         self.action_space = spaces.Discrete(BOARD_WIDTH)
         self.observation_space = spaces.Box(low=0, high=2, shape=(BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
         self.game = Connect4()
+        self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
 
     def reset(self) -> np.ndarray:
         self.game = Connect4()
+        self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
         return self.get_state()
 
     def step(self, column) -> Tuple[np.ndarray, float, bool, dict]:
@@ -38,7 +42,11 @@ class Connect4Env(gym.Env):
         if not self.game.is_valid_move(column):
             raise ValueError('Invalid action, column %s is full' % column)
         self.game.move(column)
-        state = self.get_state()
+
+        self.board1[self.game.lowest_row[column] - 1][column] = self.game.player + 1
+        self.board2[self.game.lowest_row[column] - 1][column] = (self.game.player ^ 1) + 1
+
+        state = self.get_state(self.game.player)
         reward = self.game.get_reward()
         game_over = self.game.is_game_over()
 
@@ -52,8 +60,12 @@ class Connect4Env(gym.Env):
         valid_moves = set(self.game.get_moves())
         return valid_moves
 
-    def get_state(self) -> np.ndarray:
-        board = self.game.board.copy()
+    def get_state(self, player=None) -> np.ndarray:
+        if player == 1:
+            board = self.board2.copy()
+        else:
+            board = self.board1.copy()
+        # board = self.game.board.copy()
         state = np.flip(board, axis=0)
         return state
 
@@ -75,7 +87,6 @@ class Connect4Env(gym.Env):
         :return: 0 or 1 if that player is winner, -1 for draw.
         """
         assert self.game.is_game_over()
-
         if self.game.is_draw():
             return -1
         return 0 if self.game.is_winner(0) else 1
@@ -93,7 +104,7 @@ class Connect4Env(gym.Env):
 class Connect4:
     def __init__(self) -> None:
         super().__init__()
-        self.board = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        # self.board = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
         self.bit_board = [0, 0]  # bit-board for each player
         self.dirs = [1, (BOARD_HEIGHT + 1), (BOARD_HEIGHT + 1) - 1, (BOARD_HEIGHT + 1) + 1]  # this is used for bitwise operations
         self.heights = [(BOARD_HEIGHT + 1) * i for i in range(BOARD_WIDTH)]  # top empty row for each column
@@ -103,10 +114,10 @@ class Connect4:
 
     def clone(self):
         clone = Connect4()
+        # clone.board = copy.deepcopy(self.board)
         clone.bit_board = copy.deepcopy(self.bit_board)
         clone.heights = copy.deepcopy(self.heights)
         clone.lowest_row = copy.deepcopy(self.lowest_row)
-        clone.board = copy.deepcopy(self.board)
         clone.top_row = copy.deepcopy(self.top_row)
         clone.player = self.player
         return clone
@@ -116,7 +127,7 @@ class Connect4:
         self.heights[column] += 1  # update top empty row for column
         self.player ^= 1
         self.bit_board[self.player] ^= m2  # XOR operation to insert stone in player's bit-board
-        self.board[self.lowest_row[column]][column] = self.player + 1  # update entry in matrix (only for printing)
+        # self.board[self.lowest_row[column]][column] = self.player + 1  # update entry in matrix (only for printing)
         self.lowest_row[column] += 1  # update number of stones in column
 
     def get_reward(self, player: int = None) -> Optional[float]:
