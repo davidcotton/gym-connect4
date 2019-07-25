@@ -92,7 +92,7 @@ class Connect4Env(gym.Env):
         return 0 if self.game.is_winner(0) else 1
 
     def time(self):
-        return np.count_nonzero(self.game.board)
+        return np.count_nonzero(self.board1)
 
     def reward_lose(self):
         return REWARD_LOSS
