@@ -25,13 +25,13 @@ class Connect4Env(gym.Env):
         self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
         self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
 
-    def reset(self) -> np.ndarray:
+    def reset(self):
         self.game = Connect4()
         self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
         self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
-        return self.get_state()
+        return self.get_state(0), self.get_state(1)
 
-    def step(self, column) -> Tuple[np.ndarray, float, bool, dict]:
+    def step(self, column):
         """Make a game action.
 
         Throws a ValueError if trying to drop into a full column.
@@ -46,7 +46,7 @@ class Connect4Env(gym.Env):
         self.board1[self.game.lowest_row[column] - 1][column] = self.game.player + 1
         self.board2[self.game.lowest_row[column] - 1][column] = (self.game.player ^ 1) + 1
 
-        state = self.get_state(self.game.player)
+        state = self.get_state(0), self.get_state(1)
         reward = self.game.get_reward()
         game_over = self.game.is_game_over()
 
@@ -65,7 +65,6 @@ class Connect4Env(gym.Env):
             board = self.board2.copy()
         else:
             board = self.board1.copy()
-        # board = self.game.board.copy()
         state = np.flip(board, axis=0)
         return state
 
