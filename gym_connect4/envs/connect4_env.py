@@ -1,5 +1,5 @@
 import copy
-from typing import List, Set
+from typing import List
 
 import gym
 from gym import spaces
@@ -22,8 +22,13 @@ class Connect4Env(gym.Env):
     def __init__(self, env_config=None) -> None:
         super().__init__()
         self.game = Connect4(env_config)
-        self.action_space = spaces.Discrete(self.game.board_width)
-        self.observation_space = spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8)
+        self.action_space = spaces.Discrete(self.game.board_width + 1)
+        self.observation_space = spaces.Dict({
+            'action_mask': spaces.Box(low=0, high=1, shape=(self.game.board_width + 1,), dtype=np.uint8),
+            'board': spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8),
+            'current_player': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+            'player_id': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+        })
         # maintain a copy of each player's observations
         # each board is player invariant, has the player as `1` and the opponent as `2`
         self.boards: List[np.array] = []
@@ -31,36 +36,55 @@ class Connect4Env(gym.Env):
     def reset(self):
         self.game = Connect4()
         self.boards = [np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8) for _ in range(2)]
-        return self._get_state(0), self._get_state(1)
+        obs_dict = {
+            i: {
+                'action_mask': self._get_action_mask(i),
+                'board': self._get_state(i),
+                'current_player': np.array([0]),  # player0 is always first
+                'player_id': np.array([i]),
+            } for i in range(2)
+        }
+        return obs_dict
 
-    def step(self, column):
+    def step(self, action_dict):
         """Make a game action.
 
         Throws a ValueError if trying to drop into a full column.
 
-        :param column: The column index to drop in ([0-7]).
-        :return: A tuple containing the next state, reward, if the game ended and an empty info dict.
+        :param action_dict: A dictionary of actions.
+        :return: A tuple containing the next obs, rewards, if the game ended and an empty info dict.
         """
-        if not self.game.is_valid_move(column):
-            raise ValueError('Invalid action, column %s is full' % column)
-        self.game.move(column)
 
+        player = self.game.player ^ 1  # game.player is incremented in game.move(), so use flipped value internally
+        next_player = self.game.player
+        column = action_dict[player]
+
+        try:
+            assert self.game.is_valid_move(column)
+        except Exception as e:
+            print('Invalid action, column %s is full' % column)
+            print(self._get_state(player))
+            raise e
+
+        self.game.move(column)
         self.boards[0][self.game.column_counts[column] - 1][column] = self.game.player + 1
         self.boards[1][self.game.column_counts[column] - 1][column] = (self.game.player ^ 1) + 1
 
-        state = self._get_state(0), self._get_state(1)
-        reward = self.game.get_reward()
+        obs = {
+            i: {
+                'board': self._get_state(i),
+                'action_mask': self._get_action_mask(i),
+                'player_id': np.array([i]),
+                'current_player': np.array([next_player]),
+            } for i in range(2)
+        }
+        rewards = {
+            player: self.game.get_reward(player),
+            next_player: self.game.get_reward(next_player)
+        }
         game_over = self.game.is_game_over()
 
-        return state, reward, game_over, {}
-
-    def valid_actions(self) -> Set[int]:
-        """Fetch a set of valid moves available.
-
-        :return: A set of valid moves.
-        """
-        valid_moves = set(self.game.get_moves())
-        return valid_moves
+        return obs, rewards, game_over, {}
 
     def _get_state(self, player=None) -> np.ndarray:
         if player == 0 or None:
@@ -71,7 +95,7 @@ class Connect4Env(gym.Env):
             raise ValueError('Invalid player ID %s' % player)
         return np.flip(board, axis=0)
 
-    def _get_action_mask(self, player):
+    def _get_action_mask(self, player) -> np.ndarray:
         if player == self.game.player ^ 1:
             mask = np.array(self.game.get_action_mask() + [0])
         else:
@@ -100,9 +124,6 @@ class Connect4Env(gym.Env):
         if self.game.is_draw():
             return -1
         return 0 if self.game.is_winner(0) else 1
-
-    def time(self):
-        return np.count_nonzero(self.boards[0])
 
     @property
     def reward_win(self):
