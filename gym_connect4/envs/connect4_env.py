@@ -121,7 +121,6 @@ class Connect4:
             'reward_step': REWARD_STEP,
         }, **env_config or {})
 
-        # self.board = np.zeros((self.board_height, self.board_width), dtype=np.uint8)
         self.bit_board = [0, 0]  # bit-board for each player
         self.dirs = [1, (self.board_height + 1), (self.board_height + 1) - 1, (self.board_height + 1) + 1]  # this is used for bitwise operations
         self.heights = [(self.board_height + 1) * i for i in range(self.board_width)]  # top empty row for each column
@@ -131,7 +130,6 @@ class Connect4:
 
     def clone(self):
         clone = Connect4()
-        # clone.board = copy.deepcopy(self.board)
         clone.bit_board = copy.deepcopy(self.bit_board)
         clone.heights = copy.deepcopy(self.heights)
         clone.lowest_row = copy.deepcopy(self.lowest_row)
@@ -144,7 +142,6 @@ class Connect4:
         self.heights[column] += 1  # update top empty row for column
         self.player ^= 1
         self.bit_board[self.player] ^= m2  # XOR operation to insert stone in player's bit-board
-        # self.board[self.lowest_row[column]][column] = self.player + 1  # update entry in matrix (only for printing)
         self.lowest_row[column] += 1  # update number of stones in column
 
     def get_reward(self, player=None) -> float:
