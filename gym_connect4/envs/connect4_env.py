@@ -6,29 +6,31 @@ from gym import spaces
 import numpy as np
 
 
+# default game config, can be overridden in `env_config`
 BOARD_HEIGHT = 6
 BOARD_WIDTH = 7
 WIN_LENGTH = 4
 REWARD_WIN = 1.0
-REWARD_LOSS = 0.0
-REWARD_DRAW = 0.5
+REWARD_LOSE = -1.0
+REWARD_DRAW = 0.0
+REWARD_STEP = 0.0
 
 
 class Connect4Env(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self) -> None:
+    def __init__(self, env_config=None) -> None:
         super().__init__()
-        self.action_space = spaces.Discrete(BOARD_WIDTH)
-        self.observation_space = spaces.Box(low=0, high=2, shape=(BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
-        self.game = Connect4()
-        self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
-        self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        self.game = Connect4(env_config)
+        self.action_space = spaces.Discrete(self.game.board_width)
+        self.observation_space = spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8)
+        self.board1 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
+        self.board2 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
 
     def reset(self):
         self.game = Connect4()
-        self.board1 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
-        self.board2 = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        self.board1 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
+        self.board2 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
         return self.get_state(0), self.get_state(1)
 
     def step(self, column):
@@ -93,22 +95,38 @@ class Connect4Env(gym.Env):
     def time(self):
         return np.count_nonzero(self.board1)
 
-    def reward_lose(self):
-        return REWARD_LOSS
+    @property
+    def reward_win(self):
+        return self.game.reward_win
 
+    @property
+    def reward_lose(self):
+        return self.game.reward_lose
+
+    @property
     def reward_draw(self):
-        return REWARD_DRAW
+        return self.game.reward_draw
 
 
 class Connect4:
-    def __init__(self) -> None:
+    def __init__(self, env_config=None) -> None:
         super().__init__()
-        # self.board = np.zeros((BOARD_HEIGHT, BOARD_WIDTH), dtype=np.uint8)
+        self.env_config = dict({
+            'board_height': BOARD_HEIGHT,
+            'board_width': BOARD_WIDTH,
+            'win_length': WIN_LENGTH,
+            'reward_win': REWARD_WIN,
+            'reward_draw': REWARD_DRAW,
+            'reward_lose': REWARD_LOSE,
+            'reward_step': REWARD_STEP,
+        }, **env_config or {})
+
+        # self.board = np.zeros((self.board_height, self.board_width), dtype=np.uint8)
         self.bit_board = [0, 0]  # bit-board for each player
-        self.dirs = [1, (BOARD_HEIGHT + 1), (BOARD_HEIGHT + 1) - 1, (BOARD_HEIGHT + 1) + 1]  # this is used for bitwise operations
-        self.heights = [(BOARD_HEIGHT + 1) * i for i in range(BOARD_WIDTH)]  # top empty row for each column
-        self.lowest_row = [0] * BOARD_WIDTH  # number of stones in each row
-        self.top_row = [(x * (BOARD_HEIGHT + 1)) - 1 for x in range(1, BOARD_WIDTH + 1)]  # top row of the board (this will never change)
+        self.dirs = [1, (self.board_height + 1), (self.board_height + 1) - 1, (self.board_height + 1) + 1]  # this is used for bitwise operations
+        self.heights = [(self.board_height + 1) * i for i in range(self.board_width)]  # top empty row for each column
+        self.lowest_row = [0] * self.board_width  # number of stones in each row
+        self.top_row = [(x * (self.board_height + 1)) - 1 for x in range(1, self.board_width + 1)]  # top row of the board (this will never change)
         self.player = 1
 
     def clone(self):
@@ -129,18 +147,18 @@ class Connect4:
         # self.board[self.lowest_row[column]][column] = self.player + 1  # update entry in matrix (only for printing)
         self.lowest_row[column] += 1  # update number of stones in column
 
-    def get_reward(self, player: int = None) -> Optional[float]:
+    def get_reward(self, player=None) -> float:
         if player is None:
             player = self.player
 
         if self.is_winner(player):
-            return REWARD_WIN  # player wins
+            return self.reward_win
         elif self.is_winner(player ^ 1):
-            return REWARD_LOSS  # if opponent wins
+            return self.reward_lose
         elif self.is_draw():
-            return REWARD_DRAW
+            return self.reward_draw
         else:
-            return 0.0
+            return self.reward_step
 
     def is_winner(self, player: int = None) -> bool:
         """Evaluate board, find out if a player has won.
@@ -153,7 +171,7 @@ class Connect4:
 
         for d in self.dirs:
             bb = self.bit_board[player]
-            for i in range(1, WIN_LENGTH):
+            for i in range(1, self.win_length):
                 bb &= self.bit_board[player] >> (i * d)
             if bb != 0:
                 return True
@@ -179,8 +197,8 @@ class Connect4:
             return []  # if terminal state, return empty list
 
         list_moves = []
-        for i in range(BOARD_WIDTH):
-            if self.lowest_row[i] < BOARD_HEIGHT:
+        for i in range(self.board_width):
+            if self.lowest_row[i] < self.board_height:
                 list_moves.append(i)
         return list_moves
 
@@ -202,3 +220,31 @@ class Connect4:
         :return: True if it is a valid move, else False.
         """
         return self.heights[column] != self.top_row[column]
+
+    @property
+    def board_height(self) -> int:
+        return self.env_config['board_height']
+
+    @property
+    def board_width(self) -> int:
+        return self.env_config['board_width']
+
+    @property
+    def win_length(self) -> int:
+        return self.env_config['win_length']
+
+    @property
+    def reward_win(self) -> float:
+        return self.env_config['reward_win']
+
+    @property
+    def reward_draw(self) -> float:
+        return self.env_config['reward_draw']
+
+    @property
+    def reward_lose(self) -> float:
+        return self.env_config['reward_lose']
+
+    @property
+    def reward_step(self) -> float:
+        return self.env_config['reward_step']
