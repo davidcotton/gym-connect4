@@ -1,5 +1,5 @@
 import copy
-from typing import List, Optional, Set, Tuple
+from typing import List, Set
 
 import gym
 from gym import spaces
@@ -24,14 +24,14 @@ class Connect4Env(gym.Env):
         self.game = Connect4(env_config)
         self.action_space = spaces.Discrete(self.game.board_width)
         self.observation_space = spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8)
-        self.board1 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
-        self.board2 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
+        # maintain a copy of each player's observations
+        # each board is player invariant, has the player as `1` and the opponent as `2`
+        self.boards: List[np.array] = []
 
     def reset(self):
         self.game = Connect4()
-        self.board1 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
-        self.board2 = np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8)
-        return self.get_state(0), self.get_state(1)
+        self.boards = [np.zeros((self.game.board_height, self.game.board_width), dtype=np.uint8) for _ in range(2)]
+        return self._get_state(0), self._get_state(1)
 
     def step(self, column):
         """Make a game action.
@@ -45,10 +45,10 @@ class Connect4Env(gym.Env):
             raise ValueError('Invalid action, column %s is full' % column)
         self.game.move(column)
 
-        self.board1[self.game.column_counts[column] - 1][column] = self.game.player + 1
-        self.board2[self.game.column_counts[column] - 1][column] = (self.game.player ^ 1) + 1
+        self.boards[0][self.game.column_counts[column] - 1][column] = self.game.player + 1
+        self.boards[1][self.game.column_counts[column] - 1][column] = (self.game.player ^ 1) + 1
 
-        state = self.get_state(0), self.get_state(1)
+        state = self._get_state(0), self._get_state(1)
         reward = self.game.get_reward()
         game_over = self.game.is_game_over()
 
@@ -62,18 +62,27 @@ class Connect4Env(gym.Env):
         valid_moves = set(self.game.get_moves())
         return valid_moves
 
-    def get_state(self, player=None) -> np.ndarray:
-        if player == 1:
-            board = self.board2.copy()
+    def _get_state(self, player=None) -> np.ndarray:
+        if player == 0 or None:
+            board = self.boards[0].copy()
+        elif player == 1:
+            board = self.boards[1].copy()
         else:
-            board = self.board1.copy()
-        state = np.flip(board, axis=0)
-        return state
+            raise ValueError('Invalid player ID %s' % player)
+        return np.flip(board, axis=0)
+
+    def _get_action_mask(self, player):
+        if player == self.game.player ^ 1:
+            mask = np.array(self.game.get_action_mask() + [0])
+        else:
+            mask = np.zeros((8,), dtype=np.uint8)
+            mask[-1] = 1
+        return mask
 
     def render(self, mode='human') -> None:
         print('  1 2 3 4 5 6 7')
         print(' ---------------')
-        print(self.get_state())
+        print(self._get_state())
         print(' ---------------')
         print('  1 2 3 4 5 6 7')
         # print()
@@ -93,7 +102,7 @@ class Connect4Env(gym.Env):
         return 0 if self.game.is_winner(0) else 1
 
     def time(self):
-        return np.count_nonzero(self.board1)
+        return np.count_nonzero(self.boards[0])
 
     @property
     def reward_win(self):
