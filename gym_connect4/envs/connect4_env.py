@@ -15,6 +15,12 @@ REWARD_LOSE = -1.0
 REWARD_DRAW = 0.0
 REWARD_STEP = 0.0
 
+# making these constants for clarity
+WINNER_NONE = -2
+WINNER_DRAW = -1
+WINNER_PLAYER0 = 0
+WINNER_PLAYER1 = 1
+
 
 class Connect4Env(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -28,6 +34,7 @@ class Connect4Env(gym.Env):
             'board': spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8),
             'current_player': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
             'player_id': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+            'winner': spaces.Box(low=-2, high=1, shape=(1,), dtype=np.uint8),
         })
         # maintain a copy of each player's observations
         # each board is player invariant, has the player as `1` and the opponent as `2`
@@ -42,6 +49,7 @@ class Connect4Env(gym.Env):
                 'board': self._get_state(i),
                 'current_player': np.array([0]),  # player0 is always first
                 'player_id': np.array([i]),
+                'winner': WINNER_NONE
             } for i in range(2)
         }
         return obs_dict
@@ -70,21 +78,35 @@ class Connect4Env(gym.Env):
         self.boards[0][self.game.column_counts[column] - 1][column] = self.game.player + 1
         self.boards[1][self.game.column_counts[column] - 1][column] = (self.game.player ^ 1) + 1
 
+        game_over = self.game.is_game_over()
+        winner = self._get_winner() if game_over else WINNER_NONE
         obs = {
             i: {
                 'action_mask': self._get_action_mask(i),
                 'board': self._get_state(i),
                 'current_player': np.array([next_player]),
                 'player_id': np.array([i]),
+                'winner': winner,
             } for i in range(2)
         }
         rewards = {
             player: self.game.get_reward(player),
             next_player: self.game.get_reward(next_player)
         }
-        game_over = self.game.is_game_over()
 
         return obs, rewards, game_over, {}
+
+    def render(self, mode='human') -> None:
+        print('  1 2 3 4 5 6 7')
+        print(' ---------------')
+        print(self._get_state())
+        print(' ---------------')
+        print('  1 2 3 4 5 6 7')
+        # print()
+        # if self.game.is_game_over():
+        #     print('##########')
+        #     print('Winner:', self.game.player + 1)
+        #     print('##########')
 
     def _get_state(self, player=None) -> np.ndarray:
         if player == 0 or None:
@@ -103,27 +125,10 @@ class Connect4Env(gym.Env):
             mask[-1] = 1
         return mask
 
-    def render(self, mode='human') -> None:
-        print('  1 2 3 4 5 6 7')
-        print(' ---------------')
-        print(self._get_state())
-        print(' ---------------')
-        print('  1 2 3 4 5 6 7')
-        # print()
-        # if self.game.is_game_over():
-        #     print('##########')
-        #     print('Winner:', self.game.player + 1)
-        #     print('##########')
-
-    def winner(self) -> int:
-        """Fetch the winner of a completed game.
-
-        :return: 0 or 1 if that player is winner, -1 for draw.
-        """
-        assert self.game.is_game_over()
+    def _get_winner(self) -> int:
         if self.game.is_draw():
-            return -1
-        return 0 if self.game.is_winner(0) else 1
+            return WINNER_DRAW
+        return WINNER_PLAYER0 if self.game.is_winner(0) else WINNER_PLAYER1
 
     @property
     def reward_win(self):
