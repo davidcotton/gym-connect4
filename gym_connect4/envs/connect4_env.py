@@ -72,10 +72,10 @@ class Connect4Env(gym.Env):
 
         obs = {
             i: {
-                'board': self._get_state(i),
                 'action_mask': self._get_action_mask(i),
-                'player_id': np.array([i]),
+                'board': self._get_state(i),
                 'current_player': np.array([next_player]),
+                'player_id': np.array([i]),
             } for i in range(2)
         }
         rewards = {
@@ -97,7 +97,7 @@ class Connect4Env(gym.Env):
 
     def _get_action_mask(self, player) -> np.ndarray:
         if player == self.game.player ^ 1:
-            mask = np.array(self.game.get_action_mask() + [0])
+            mask = np.array(self.game.get_action_mask() + [0], dtype=np.uint8)
         else:
             mask = np.zeros((8,), dtype=np.uint8)
             mask[-1] = 1
