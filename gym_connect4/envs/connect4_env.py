@@ -144,7 +144,7 @@ class Connect4Env(gym.Env):
 
 
 class Connect4:
-    def __init__(self, env_config=None) -> None:
+    def __init__(self, env_config=None, game_state=None) -> None:
         super().__init__()
         self.env_config = dict({
             'board_height': BOARD_HEIGHT,
@@ -167,6 +167,22 @@ class Connect4:
         self.column_counts = [0] * self.board_width
         # to check for valid moves it is convenient to build an index of the top row of the board to compare against
         self.top_row = [(x * (self.board_height + 1)) - 1 for x in range(1, self.board_width + 1)]
+
+        if game_state is not None:  # reconstitute from game state
+            board = np.flip(game_state['board'].reshape(self.board_height, self.board_width), axis=0).astype(np.uint8)
+            self.player = game_state['player']
+            for y, row in enumerate(board):
+                num_updated = 0
+                for column, value in enumerate(row):
+                    if value in {1, 2}:
+                        player = value - 1
+                        m2 = 1 << self.empty_indexes[column]
+                        self.empty_indexes[column] += 1
+                        self.bitboard[player] ^= m2
+                        self.column_counts[column] += 1
+                        num_updated += 1
+                if num_updated == 0:
+                    break
 
     def clone(self):
         clone = Connect4()
