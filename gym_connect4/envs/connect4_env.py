@@ -34,7 +34,7 @@ class Connect4Env(gym.Env):
             'board': spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8),
             'current_player': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
             'player_id': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
-            'winner': spaces.Box(low=-2, high=1, shape=(1,), dtype=np.uint8),
+            'winner': spaces.Box(low=-2, high=1, shape=(1,), dtype=np.int8),
         })
         # maintain a copy of each player's observations
         # each board is player invariant, has the player as `1` and the opponent as `2`
@@ -110,12 +110,12 @@ class Connect4Env(gym.Env):
 
     def _get_state(self, player=None) -> np.ndarray:
         if player == 0 or None:
-            board = self.boards[0].copy()
+            board = self.boards[0]
         elif player == 1:
-            board = self.boards[1].copy()
+            board = self.boards[1]
         else:
             raise ValueError('Invalid player ID %s' % player)
-        return np.flip(board, axis=0)
+        return np.flip(board, axis=0).copy()
 
     def _get_action_mask(self, player) -> np.ndarray:
         if player == self.game.player ^ 1:
