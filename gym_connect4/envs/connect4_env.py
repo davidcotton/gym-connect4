@@ -54,18 +54,18 @@ class Connect4Env(gym.Env):
         }
         return obs_dict
 
-    def step(self, action_dict):
+    def step(self, actions: List[int]):
         """Make a game action.
 
         Throws a ValueError if trying to drop into a full column.
 
-        :param action_dict: A dictionary of actions.
+        :param actions: A list ints encoding player: action.
         :return: A tuple containing the next obs, rewards, if the game ended and an empty info dict.
         """
 
         player = self.game.player ^ 1  # game.player is incremented in game.move(), so use flipped value internally
         next_player = self.game.player
-        column = action_dict[player]
+        column = actions[player]
 
         try:
             assert self.game.is_valid_move(column)
@@ -102,11 +102,6 @@ class Connect4Env(gym.Env):
         print(self._get_state())
         print(' ---------------')
         print('  1 2 3 4 5 6 7')
-        # print()
-        # if self.game.is_game_over():
-        #     print('##########')
-        #     print('Winner:', self.game.player + 1)
-        #     print('##########')
 
     def _get_state(self, player=None) -> np.ndarray:
         if player == 0 or None:
