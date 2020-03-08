@@ -89,10 +89,7 @@ class Connect4Env(gym.Env):
                 'winner': winner,
             } for i in range(2)
         }
-        rewards = {
-            player: self.game.get_reward(player),
-            next_player: self.game.get_reward(next_player)
-        }
+        rewards = {i: self.game.get_reward(i) for i in range(2)}
 
         return obs, rewards, game_over, {}
 
