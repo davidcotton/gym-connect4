@@ -32,9 +32,9 @@ class Connect4Env(gym.Env):
         self.observation_space = spaces.Dict({
             'action_mask': spaces.Box(low=0, high=1, shape=(self.game.board_width + 1,), dtype=np.uint8),
             'board': spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8),
-            'current_player': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
-            'player_id': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
-            'winner': spaces.Box(low=-2, high=1, shape=(1,), dtype=np.int8),
+            # 'current_player': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+            # 'player_id': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+            # 'winner': spaces.Box(low=-2, high=1, shape=(1,), dtype=np.int8),
         })
         # maintain a copy of each player's observations
         # each board is player invariant, has the player as `1` and the opponent as `2`
@@ -47,9 +47,9 @@ class Connect4Env(gym.Env):
             i: {
                 'action_mask': self._get_action_mask(i),
                 'board': self._get_state(i),
-                'current_player': np.array([0]),  # player0 is always first
-                'player_id': np.array([i]),
-                'winner': WINNER_NONE
+                # 'current_player': np.array([0]),  # player0 is always first
+                # 'player_id': np.array([i]),
+                # 'winner': WINNER_NONE
             } for i in range(2)
         }
         return obs_dict
@@ -84,9 +84,9 @@ class Connect4Env(gym.Env):
             i: {
                 'action_mask': self._get_action_mask(i),
                 'board': self._get_state(i),
-                'current_player': np.array([next_player]),
-                'player_id': np.array([i]),
-                'winner': winner,
+                # 'current_player': np.array([next_player]),
+                # 'player_id': np.array([i]),
+                # 'winner': winner,
             } for i in range(2)
         }
         rewards = {i: self.game.get_reward(i) for i in range(2)}
