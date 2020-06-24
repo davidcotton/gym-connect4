@@ -160,6 +160,9 @@ class Connect4:
         # to check for valid moves it is convenient to build an index of the top row of the board to compare against
         self.top_row = [(x * (self.board_height + 1)) - 1 for x in range(1, self.board_width + 1)]
 
+        # cache winner checks (each turn) as a little expensive
+        self.is_winner_cache = [None, None]
+
         if game_state is not None:  # reconstitute from game state
             board = np.flip(game_state['board'].reshape(self.board_height, self.board_width), axis=0).astype(np.uint8)
             self.player = game_state['player']
@@ -186,6 +189,7 @@ class Connect4:
         return clone
 
     def move(self, column) -> None:
+        self.is_winner_cache = [None, None]
         m2 = 1 << self.empty_indexes[column]  # position entry on bitboard
         self.empty_indexes[column] += 1  # update top empty row for column
         self.player ^= 1
@@ -214,12 +218,17 @@ class Connect4:
         if player is None:
             player = self.player
 
+        if self.is_winner_cache[player] is not None:
+            return self.is_winner_cache[player]
+
         for d in self.win_conditions:
             bb = self.bitboard[player]
             for i in range(1, self.win_length):
                 bb &= self.bitboard[player] >> (i * d)
             if bb != 0:
+                self.is_winner_cache[player] = True
                 return True
+        self.is_winner_cache[player] = False
         return False
 
     def is_draw(self) -> bool:
