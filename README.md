@@ -1,6 +1,7 @@
 # 2-player Connect4 gym environment
 OpenAI Gym environment for the classic board game - Connect4. 
 Designed for competitive reinforcement learning, requires two agents to play. 
+Designed for speed. Pure python, but uses bitboards (bitwise operations) to try and get you the maximum simulation speed. 
 
 ## Requirements
 - Python 3
