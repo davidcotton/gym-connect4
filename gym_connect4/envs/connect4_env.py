@@ -64,7 +64,7 @@ class Connect4Env(gym.Env):
         """
 
         player = self.game.player ^ 1  # game.player is incremented in game.move(), so use flipped value internally
-        next_player = self.game.player
+        # next_player = self.game.player
         column = actions[player]
 
         try:
@@ -79,7 +79,7 @@ class Connect4Env(gym.Env):
         self.boards[1][self.game.column_counts[column] - 1][column] = (self.game.player ^ 1) + 1
 
         game_over = self.game.is_game_over()
-        winner = self._get_winner() if game_over else WINNER_NONE
+        # winner = self._get_winner() if game_over else WINNER_NONE
         obs = {
             i: {
                 'action_mask': self._get_action_mask(i),

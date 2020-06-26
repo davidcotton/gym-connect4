@@ -1,6 +1,6 @@
 # 2-player Connect4 gym environment
 OpenAI Gym environment for the classic board game - Connect4. 
-Designed for adversarial reinforcement learning, requires two agents to play. 
+Designed for competitive reinforcement learning, requires two agents to play. 
 
 ## Requirements
 - Python 3
@@ -23,7 +23,7 @@ Build a new (default) Connect4 environment via the usual Gym factory method
 Then use similar to usual Gym workflow run the env, except that both players receive obs and generate an action each turn.
 
     agents = [Agent1(), Agent2()]
-    obs = env.reset()
+    obses = env.reset()  # dict: {0: obs_player_1, 1: obs_player_2}
     game_over = False
     while not game_over:
         action_dict = {}
@@ -31,7 +31,7 @@ Then use similar to usual Gym workflow run the env, except that both players rec
             action = env.action_space.sample()
             action_dict[agent_id] = action
         
-        obs, reward, game_over, info = env.step(action_dict)
+        obses, rewards, game_over, info = env.step(action_dict)
         env.render()
 
 As Connect4 is an alternating turn game, the env is structured so both agents receive an obs at every time step, 
@@ -42,13 +42,11 @@ The action space is each column, [0-6] (for default width 7 Connect4) plus an ex
 
     gym.spaces.Discrete(8)
 
-The observation space is a dictionary containing: the action mask, the game board, your player ID, and the current player's ID, e.g.
+The observation space is a dictionary containing: the action mask and the game board, e.g.
 
     gym.spaces.Dict({
         'action_mask': gym.spaces.Box(low=0, high=1, shape=(self.game.board_width + 1,), dtype=np.uint8),
         'board': gym.spaces.Box(low=0, high=2, shape=(self.game.board_height, self.game.board_width), dtype=np.uint8),
-        'current_player': gym.spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
-        'player_id': gym.spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
     })
 
 These can be accessed like a normal Python dict, e.g.
@@ -59,20 +57,38 @@ These can be accessed like a normal Python dict, e.g.
     >>> numpy.ndarray([1, 1, 1, 0, 1, 1, 1, 0])
 
 
-## Additional Methods
-I've added some additional helper methods and properties to the environment:
+### Configuration
+#### Custom Game Initialisation
+Optionally, you can change the default environment configuration 
 
-### Winner
-Get the game winner,
+    env_config = {
+        'board_height': 4,
+        'board_width': 5,
+    }
+    env = gym.make('Connect4Env-v0', env_config=env_config)
 
-    winner = env.winner
-    >>> 1
+The available parameters are:
 
-Where:
-- None: game in progress
-- 0: draw
-- 1: player 1 is winner
-- 2: player 2 is winner
+| Param | Description | Default |
+|-------|-------------|---------|
+| board_height | The number of rows on the connect4 board | 6 |
+| board_width | The number of columns on the connect4 board |  7 |
+| win_length | The number of consecutive discs need to win | 4 |
+| reward_win | The utility of winning | 1.0 |
+| reward_lose | The utility of losing | -1.0 |
+| reward_draw | The utility of a draw | 0.0 |
+| reward_step | The utility of each turn | 0.0 |
+
+
+#### Custom Game States
+If you are using a search-based algorithm such as MCTS or Minimax, you might want the ability to initialise the a game in a custom state, e.g. part way through a game.
+Rather than building the full Gym environment, you can just use the inner game class with a custom config and/or game state:
+
+    from gym_connect4.envs.connect4_env import Connect4
+    
+    board = np.array([0, 0, 0, ...])
+    game = Connect4(game_state={'board': board, 'player': 1})
+    game.move(3)
 
 
 ## Credits
