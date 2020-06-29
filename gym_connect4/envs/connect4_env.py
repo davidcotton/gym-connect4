@@ -236,7 +236,11 @@ class Connect4:
 
         :return: True if the game is drawn, else False.
         """
-        return not self.get_moves() and not self.is_winner(self.player) and not self.is_winner(self.player ^ 1)
+        return not (
+            self.get_moves()
+            or self.is_winner(self.player)
+            or self.is_winner(self.player ^ 1)
+        )
 
     def is_game_over(self) -> bool:
         """Is the game over?
@@ -253,11 +257,11 @@ class Connect4:
         if self.is_winner(self.player) or self.is_winner(self.player ^ 1):
             return []  # if terminal state, return empty list
 
-        list_moves = []
-        for i in range(self.board_width):
-            if self.column_counts[i] < self.board_height:
-                list_moves.append(i)
-        return list_moves
+        return [
+            i
+            for i in range(self.board_width)
+            if self.column_counts[i] < self.board_height
+        ]
 
     def get_action_mask(self) -> List[int]:
         """Fetch a mask of valid actions
