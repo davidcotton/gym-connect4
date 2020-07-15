@@ -101,7 +101,7 @@ class Connect4Env(gym.Env):
         print('  1 2 3 4 5 6 7')
 
     def _get_state(self, player=None) -> np.ndarray:
-        if player == 0 or None:
+        if player == 0 or player is None:
             board = self.boards[0]
         elif player == 1:
             board = self.boards[1]
