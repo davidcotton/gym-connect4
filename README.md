@@ -23,7 +23,7 @@ Build a new (default) Connect4 environment via the usual Gym factory method
 
 Then use similar to usual Gym workflow run the env, except that both players receive obs and generate an action each turn.
 
-    agents = [Agent1(), Agent2()]
+    agents = ['Agent1()', 'Agent2()']
     obses = env.reset()  # dict: {0: obs_player_1, 1: obs_player_2}
     game_over = False
     while not game_over:

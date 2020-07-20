@@ -1,5 +1,0 @@
-gym>=0.9.6
-numpy
-pytest
-pytest-cov
-pytest-sugar
